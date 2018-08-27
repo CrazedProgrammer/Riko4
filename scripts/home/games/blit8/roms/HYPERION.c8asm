@@ -1,0 +1,247 @@
+entry:
+	JP start
+
+; data
+
+Null:
+	db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+
+Char_H:
+	db %10001000
+	db %10001000
+	db %11111000
+	db %10001000
+	db %10001000
+Char_Y:
+	db %10001000
+	db %10001000
+	db %01110000
+	db %00100000
+	db %00100000
+Char_P:
+	db %11110000
+	db %10001000
+	db %11110000
+	db %10000000
+	db %10000000
+Char_E:
+	db %11111000
+	db %10000000
+	db %11110000
+	db %10000000
+	db %11111000
+Char_R:
+	db %11110000
+	db %10001000
+	db %11111000
+	db %10010000
+	db %10001000
+Char_I:
+	db %11111000
+	db %00100000
+	db %00100000
+	db %00100000
+	db %11111000
+Char_O:
+	db %01110000
+	db %10001000
+	db %10001000
+	db %10001000
+	db %01110000
+Char_N:
+	db %10001000
+	db %11001000
+	db %10101000
+	db %10011000
+	db %10001000
+
+Buggy_Right:
+	db %01100000
+	db %01100010
+	db %00101111
+	db %01111110
+	db %10100101
+	db %01000010
+	dw #0000
+Buggy_Up:
+	db %00001100
+	db %00001000
+	db %00111100
+	db %01011010
+	db %11100111
+	db %11000011
+	dw #0000
+Buggy_Left:
+	db %00000110
+	db %01000110
+	db %11100100
+	db %01111110
+	db %10100101
+	db %01000010
+	dw #0000
+Buggy_Down:
+	db %00110000
+	db %00010000
+	db %00111100
+	db %01111110
+	db %11011011
+	db %11000011
+	dw #0000
+
+; variables
+
+Buggy_Pos:
+	dw #020F
+	dw #0206
+
+Camera_Pos:
+	dw #0200
+	dw #0200
+
+Buggy_Dir:
+	dw #0000
+
+; code
+
+start:
+	LD I, Char_H
+	LD V0, #8
+	LD V1, #8
+	LD V2, #5
+title_char:
+	DRW V0, V1, #5
+	ADD V0, #6
+	ADD I, V2
+	SE V0, #38
+	JP title_char
+title_loop:
+	SKP V2
+	JP title_loop
+
+main_init:
+	LD I, Null
+	LD [I], Vf
+main_loop:
+	LD V0, #1
+	LD DT, V0
+	CALL input_buggy_0_6
+	CLS
+	CALL draw_buggy_0_7
+wait_vsync:
+	LD V0, DT
+	SE V0, #0
+	JP wait_vsync
+	JP main_loop
+
+; functions
+
+draw_buggy_0_7:
+	; load X position into V6
+	LD I, Buggy_Pos
+	LD V1, [I]
+	LD V2, V0
+	LD V3, V1
+	LD I, Camera_Pos
+	LD V1, [I]
+	LD V4, V0
+	LD V5, V1
+	CALL sub_2w
+	SE V0, #0 ; if buggy is outside of viewport, return
+	RET
+	LD V6, V1
+	; load Y position into V7
+	LD V4, #2
+	LD I, Buggy_Pos
+	ADD I, V4
+	LD V1, [I]
+	LD V2, V0
+	LD V3, V1
+	LD I, Camera_Pos
+	ADD I, V4
+	LD V1, [I]
+	LD V4, V0
+	LD V5, V1
+	CALL sub_2w
+	SE V0, #0 ; if buggy is outside of viewport, return
+	RET
+	LD V7, V1
+	; draw buggy
+	LD I, Buggy_Dir
+	LD V0, [I]
+	LD V1, 1
+	SHL V0
+	SHL V0
+	SHL V0
+	LD I, Buggy_Right
+	ADD I, V0
+	DRW V6, V7, #6
+	RET
+
+input_buggy_0_6:
+	LD I, Buggy_Dir
+	LD V0, [I]
+	LD V6, V0
+	LD I, Buggy_Pos
+	LD V1, [I]
+	LD V2, #4
+	LD V4, #0
+	LD V5, #1
+	SKP V2			; go left
+	JP input_buggy_cont0
+	LD V2, V0
+	LD V3, V1
+	CALL sub_2w
+	LD V6, #2
+input_buggy_cont0:
+	LD V2, #6
+	SKP V2			; go right
+	JP input_buggy_cont1
+	LD V2, V0
+	LD V3, V1
+	CALL add_2w
+	LD V6, #0
+input_buggy_cont1:
+	LD [I], V1
+	LD V2, 2
+	ADD I, V2
+	LD V1, [I]
+	SKP V2			; go up
+	JP input_buggy_cont2
+	LD V2, V0
+	LD V3, V1
+	CALL sub_2w
+	LD V6, #1
+input_buggy_cont2:
+	LD V2, #8
+	SKP V2			; go down
+	JP input_buggy_cont3
+	LD V2, V0
+	LD V3, V1
+	CALL add_2w
+	LD V6, #3
+input_buggy_cont3:
+	LD [I], V1
+	LD I, Buggy_Dir
+	LD V0, V6
+	LD [I], V0
+	RET
+
+
+add_2w:
+	LD V0, V2
+	LD V1, V3
+	ADD V1, V5
+	SE Vf, #0
+	ADD V0, #1
+	ADD V0, V4
+	RET
+
+sub_2w:
+	LD V0, #0
+	LD V1, V3
+	SUB V1, V5
+	SE Vf, #1
+	LD V0, #FF
+	ADD V0, V2
+	SUB V0, V4
+	RET
